@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+psycopg2-binary
+deepface
+alembic
+python-multipart
+pillow
+numpy
+python-dotenv
+pydantic-settings
+tf-keras

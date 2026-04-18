@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: grabpic_db
+    environment:
+      POSTGRES_USER: grabpic
+      POSTGRES_PASSWORD: grabpic_secret
+      POSTGRES_DB: grabpic_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - grabpic_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  grabpic_pgdata:
