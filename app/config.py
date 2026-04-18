@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://grabpic:grabpic_secret@localhost:5432/grabpic_db"
     SYNC_DATABASE_URL: str = "postgresql+psycopg2://grabpic:grabpic_secret@localhost:5432/grabpic_db"
     UPLOAD_DIR: str = "./uploads"
-    SIMILARITY_THRESHOLD: float = 0.60
+    SIMILARITY_THRESHOLD: float = 0.50
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

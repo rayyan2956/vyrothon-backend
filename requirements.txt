@@ -3,11 +3,12 @@ uvicorn[standard]
 sqlalchemy[asyncio]
 asyncpg
 psycopg2-binary
-deepface
+insightface
+onnxruntime
 alembic
 python-multipart
 pillow
 numpy
 python-dotenv
 pydantic-settings
-tf-keras
+opencv-python-headless

@@ -1,50 +1,57 @@
 """
 Face recognition service — embedding extraction, matching, and GrabID management.
-Uses DeepFace (Facenet model) for embeddings and NumPy cosine similarity for matching.
+Uses InsightFace (ArcFace model) for 512-dim embeddings and NumPy cosine similarity for matching.
 """
 
 import uuid
 from uuid import UUID
 
+import cv2
 import numpy as np
-from deepface import DeepFace
+from insightface.app import FaceAnalysis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models import GrabID
 
+# Initialize InsightFace model (loaded once at module level)
+face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+face_app.prepare(ctx_id=0, det_size=(640, 640))
+
 
 def cosine_similarity(a, b):
     """Compute cosine similarity between two vectors."""
     a, b = np.array(a), np.array(b)
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
 def extract_embeddings(image_path: str) -> list[dict]:
     """
-    Extract face embeddings from an image using DeepFace.
+    Extract face embeddings from an image using InsightFace.
 
     Args:
         image_path: Path to the image file.
 
     Returns:
-        List of dicts, each with "embedding" (list[float]) and "facial_area" (dict).
+        List of dicts, each with "embedding" (list of 512 floats) and "facial_area" (dict).
         Returns [] if no faces detected or on any error.
     """
     try:
-        results = DeepFace.represent(
-            img_path=image_path,
-            model_name="Facenet",
-            enforce_detection=False,
-            detector_backend="opencv",
-        )
-        # DeepFace returns a list of dicts with "embedding" and "facial_area" keys
+        img = cv2.imread(image_path)
+        if img is None:
+            print(f"[face_service] Could not read image: {image_path}")
+            return []
+
+        faces = face_app.get(img)
         embeddings = []
-        for face in results:
+        for face in faces:
+            bbox = face.bbox.astype(int)  # [x1, y1, x2, y2]
+            x, y = int(bbox[0]), int(bbox[1])
+            w, h = int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1])
             embeddings.append({
-                "embedding": face["embedding"],
-                "facial_area": face["facial_area"],
+                "embedding": face.embedding.tolist(),
+                "facial_area": {"x": x, "y": y, "w": w, "h": h},
             })
         return embeddings
     except Exception as e:
@@ -59,10 +66,10 @@ async def find_matching_grab_id(db: AsyncSession, embedding: list[float]) -> UUI
 
     Args:
         db: Async database session.
-        embedding: 128-dimensional face embedding vector.
+        embedding: 512-dimensional face embedding vector.
 
     Returns:
-        UUID of the matching GrabID if similarity > 0.60, else None.
+        UUID of the matching GrabID if similarity > SIMILARITY_THRESHOLD, else None.
     """
     result = await db.execute(select(GrabID.id, GrabID.embedding))
     rows = result.all()
@@ -90,7 +97,7 @@ async def get_or_create_grab_id(db: AsyncSession, embedding: list[float]) -> UUI
 
     Args:
         db: Async database session.
-        embedding: 128-dimensional face embedding vector.
+        embedding: 512-dimensional face embedding vector.
 
     Returns:
         UUID of the matched or newly created GrabID.
