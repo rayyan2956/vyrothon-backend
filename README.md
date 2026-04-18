@@ -83,7 +83,7 @@ vyrothon-backend/
 ## Prerequisites
 
 - **Docker** & **Docker Compose** (for PostgreSQL)
-- **Python 3.10+**
+- **Python 3.10+** (Python 3.14 is verified working). If you don't have it, you can download Python from [python.org/downloads](https://www.python.org/downloads/) or use tools like `pyenv` to manage multiple versions.
 - **pip** (or a virtualenv manager)
 
 ---
